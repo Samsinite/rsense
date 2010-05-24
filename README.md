@@ -9,6 +9,6 @@
 
 ## USAGE
 
-    Alt + Space (Linux/Win/Osx)
+    Alt + / (Linux/Win/Osx)
     
     Or change the key-binding using the RSense menu under plugins
