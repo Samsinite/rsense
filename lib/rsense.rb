@@ -93,24 +93,24 @@ module Redcar
         if (path.last.split(".").last =~ /rb|erb/) || path.last.split(".").length == 1
           path[path.length-1]= path.last + "~"
           path = path.join("/")
-          log(path)
-          line_str = doc.get_line(doc.cursor_line)
-          line_str = line_str[0..doc.cursor_line_offset].rstrip
+          cursor_line_number = doc.cursor_line
+          cursor_line_str = doc.get_line(cursor_line_number)
+          cursor_line_offset = doc.cursor_line_offset
+          cursor_offset = doc.cursor_offset
+          cursor_line_end_offset = doc.cursor_line_end_offset
+          line_str = cursor_line_str.rstrip
+          new_line_length = cursor_line_str.length - line_str.length
+          line_end_length = line_str.length - cursor_line_offset
+          line_str = line_str[0..(cursor_line_offset-1)]          
           line_split = line_str.split(/::|\./)        
           prefix = ""
           prefix = line_split.last unless line_str[line_str.length-1].chr =~ /:|\./
-          offset_at_line = doc.cursor_line_offset - prefix.length
-          log("offset_at_line: #{doc.cursor_line_offset}")          
-          log("prefix length: #{prefix.length}")
-          log("prefix: #{prefix}")
-          log("offset: #{offset_at_line}")
-          log("line_split.first: #{line_split.first}")
-          doc_str = doc.to_s[0..(doc.cursor_offset-prefix.length-1)] + doc.to_s[doc.cursor_offset..(doc.to_s.length-1)]
+          prefix_start_offset = doc.cursor_line_offset - prefix.length
+          
+          doc_str = doc.to_s[0..(cursor_offset-prefix.length-1)] + doc.to_s[(cursor_offset)..(doc.to_s.length-1)]
+          
           File.open(path, "wb") {|f| f.print doc_str }
-          completions = get_completions(path, prefix, offset_at_line)
-          log("finised completions")          
-          log("completions length: #{completions.length}")
-          log("building menu")
+          completions = get_completions(path, prefix, prefix_start_offset)
           
           cur_doc = doc
           builder = Menu::Builder.new do
@@ -140,25 +140,19 @@ module Redcar
       end
       
       def get_completions(temp_path, prefix, offset_at_line)
-        log("get_completions start")
         line_offset = doc.cursor_line
         words = []
-        log("line 144")
         project = Redcar::Project.window_projects[Redcar.app.focussed_window].path + "/" if Redcar::Project.window_projects[Redcar.app.focussed_window]
-        log(project)
-        log(get_path)
         if project
           command = "ruby '#{get_path}' code-completion '--file=#{temp_path}' '--location=#{line_offset+1}:#{offset_at_line}' '--prefix=#{prefix}' '--detect-project=#{project}'"
         else
           command = "ruby '#{get_path}' code-completion '--file=#{temp_path}' '--location=#{line_offset+1}:#{offset_at_line}' '--prefix=#{prefix}'"
         end
-        log(command)        
         result = `#{command}`        
         result = result.split("\n")        
         completions = []
         result.each do |item|
           if item =~ /^completion: /
-            log(item)
             item_a = item.split(" ")
             dict = {}
             dict[:word] = item_a[1]
