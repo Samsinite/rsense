@@ -81,15 +81,12 @@ module Redcar
         Redcar::RSense.path = result[:value] if result[:button ] == :ok
       end
     end
-    
-    class RecordComiplerOptions < EditTabCommand
-      
-    end
 
     class CodeCompleteCommand < EditTabCommand      
       
       def execute
-        path = doc.mirror.path.split(/\/|\\/)        
+        return unless doc.mirror
+        path = doc.mirror.path.split(/\/|\\/)
         if (path.last.split(".").last =~ /rb|erb/) || path.last.split(".").length == 1
           path[path.length-1]= path.last + "~"
           path = path.join("/")
@@ -107,8 +104,17 @@ module Redcar
           prefix = line_split.last unless line_str[line_str.length-1].chr =~ /:|\./
           prefix_start_offset = doc.cursor_line_offset - prefix.length
           
+          log("line_str: #{line_str} length: #{line_str.length}")          
+          log("line_end_length: #{line_end_length}")
+          log("prefix: #{prefix} length: #{prefix.length}")
+          log("prefix_start_offset: #{prefix_start_offset}")
+          log("cursor_offset: #{doc.cursor_offset}")
+          log("cursor_line_offset: #{doc.cursor_line_offset}")
+          log("cursor_line_end_offset: #{doc.cursor_line_end_offset}")
+          log("new_line_length: #{new_line_length}")
           doc_str = doc.to_s[0..(cursor_offset-prefix.length-1)] + doc.to_s[(cursor_offset)..(doc.to_s.length-1)]
-          
+          log("deleted_section: #{doc.to_s[(cursor_offset-prefix.length)..(cursor_line_end_offset-new_line_length-1)]}")
+
           File.open(path, "wb") {|f| f.print doc_str }
           completions = get_completions(path, prefix, prefix_start_offset)
           
@@ -148,11 +154,14 @@ module Redcar
         else
           command = "ruby '#{get_path}' code-completion '--file=#{temp_path}' '--location=#{line_offset+1}:#{offset_at_line}' '--prefix=#{prefix}'"
         end
-        result = `#{command}`        
+        
+        log("command: #{command}")
+        result = `#{command}`
         result = result.split("\n")        
         completions = []
         result.each do |item|
           if item =~ /^completion: /
+            log("item: #{item}")
             item_a = item.split(" ")
             dict = {}
             dict[:word] = item_a[1]
@@ -170,7 +179,7 @@ module Redcar
       end
 
       def log(message)
-        puts("==> GCCSense: #{message}")
+        puts("==> RSense: #{message}")
       end
     end
   end
