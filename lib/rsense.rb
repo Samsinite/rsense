@@ -249,16 +249,7 @@ module Redcar
             end
           end
           
-          window = Redcar.app.focussed_window
-          location = window.focussed_notebook.focussed_tab.controller.edit_view.mate_text.viewer.getTextWidget.getLocationAtOffset(window.focussed_notebook.focussed_tab.controller.edit_view.cursor_offset)
-          absolute_x = location.x
-          absolute_y = location.y
-          location = window.focussed_notebook.focussed_tab.controller.edit_view.mate_text.viewer.getTextWidget.toDisplay(0,0)
-          absolute_x += location.x
-          absolute_y += location.y
-          menu = ApplicationSWT::Menu.new(window.controller, builder.menu, nil, Swt::SWT::POP_UP)
-          menu.move(absolute_x, absolute_y)
-          menu.show
+          Redcar::Application::Dialog.popup_menu(builder.menu, :cursor)
           FileUtils.rm(path)
         end
       end
