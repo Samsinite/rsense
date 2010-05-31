@@ -1,5 +1,5 @@
 require 'fileutils'
-#require 'stringio'
+require 'stringio'
 
 module Redcar
   class RSense
