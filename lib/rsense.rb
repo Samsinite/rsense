@@ -1,14 +1,18 @@
 require 'fileutils'
+#require 'stringio'
 
 module Redcar
   class RSense
     def self.menus
+      unless File.exist?("#{Redcar.root}/plugins/rsense/.rsense")
+        puts "no .rsense file detected, creating .rsense file"
+        `ruby #{RSense.path}/etc/config.rb > #{Redcar.root}/plugins/rsense/.rsense`        
+      end
       Menu::Builder.build do
         sub_menu "Plugins" do
           sub_menu "RSense" do
             item "code completion", RSense::CodeCompleteCommand
             item "key binding", RSense::ChangeKeyComboCommand
-            item "change rsense path", RSense::ChangeRsensePath
           end
         end
       end
@@ -16,14 +20,18 @@ module Redcar
     
     def self.completion_kind
       {'CLASS' => 'C', 'MODULE' => 'M', 'CONSTANT' => 'c', 'METHOD' => 'm'}
-    end
+    end    
     
     def self.path
-      RSense.storage["rsense_path"] || ""
+      "#{Redcar.root}/plugins/rsense/vendor/rsense-0.3"
     end
     
-    def self.path=(path)
-      RSense.storage["rsense_path"] = path
+    def self.primitive_command
+      "java -cp '.:#{RSense.path}/lib/rsense.jar:#{RSense.path}/lib/antlr-runtime-3.2.jar:#{RSense.path}/lib/jruby.jar' org.cx4a.rsense.Main script '--home=#{RSense.path}' --no-prompt --end-mark=END --config=#{Redcar.root}/plugins/rsense/.rsense --progress=1"
+    end
+   
+    def self.rsense_io
+      @io ||= IO.popen(primitive_command, 'r+')
     end
         
     def self.storage
@@ -70,15 +78,6 @@ module Redcar
           end
       	end
         Redcar::RSense.key_combo = result[:value] if result[:button ] == :ok
-      end
-    end
-    
-    class ChangeRsensePath < Command
-      def execute
-        result = Application::Dialog.input("RSense path", "Please enter Rsense director path (i.e. '/home/sam/rsense-0.3'))", Redcar::RSense.path) do |text|          
-          nil            
-      	end
-        Redcar::RSense.path = result[:value] if result[:button ] == :ok
       end
     end
 
@@ -140,24 +139,27 @@ module Redcar
           FileUtils.rm(path)
         end
       end
-
-      def get_path       
-        RSense.path + "/bin/rsense"
-      end
       
       def get_completions(temp_path, prefix, offset_at_line)
         line_offset = doc.cursor_line
         words = []
         project = Redcar::Project.window_projects[Redcar.app.focussed_window].path + "/" if Redcar::Project.window_projects[Redcar.app.focussed_window]
         if project
-          command = "ruby '#{get_path}' code-completion '--file=#{temp_path}' '--location=#{line_offset+1}:#{offset_at_line}' '--prefix=#{prefix}' '--detect-project=#{project}'"
+          command = "code-completion '--file=#{temp_path}' '--location=#{line_offset+1}:#{offset_at_line}' '--prefix=#{prefix}' '--detect-project=#{project}'"
         else
-          command = "ruby '#{get_path}' code-completion '--file=#{temp_path}' '--location=#{line_offset+1}:#{offset_at_line}' '--prefix=#{prefix}'"
+          command = "code-completion '--file=#{temp_path}' '--location=#{line_offset+1}:#{offset_at_line}' '--prefix=#{prefix}'"
         end
         
         log("command: #{command}")
-        result = `#{command}`
-        result = result.split("\n")        
+        #result = `#{command}`        
+        RSense.rsense_io.puts(command)
+        result = ""
+        while l = RSense.rsense_io.gets and /^END/ !~ l          
+          result << l
+        end        
+        result << 'END'        
+        
+        result = result.split("\n")
         completions = []
         result.each do |item|
           if item =~ /^completion: /
