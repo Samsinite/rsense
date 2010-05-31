@@ -3,10 +3,11 @@
     Using RSense, this plugin provides highly precise code completion for Ruby.
 ## INSTALLATION
     Requires Java Runtime Environment 1.5 or later. SunJDK and OpenJDK are supported
-    ##Installation on HEAD
+
+    Installation on HEAD
         cd into redcar/plugins
         git clone git://github.com/Samsinite/rsense.git
-    ##Installation on gem version
+    Installation on gem version
        cd into redcar/plugins
        git clone git://github.com/Samsinite/rsense.git
        cd rsense
