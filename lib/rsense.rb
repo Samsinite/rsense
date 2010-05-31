@@ -27,7 +27,11 @@ module Redcar
     end
     
     def self.primitive_command
-      "java -cp '.:#{RSense.path}/lib/rsense.jar:#{RSense.path}/lib/antlr-runtime-3.2.jar:#{RSense.path}/lib/jruby.jar' org.cx4a.rsense.Main script '--home=#{RSense.path}' --no-prompt --end-mark=END --config=#{Redcar.root}/plugins/rsense/.rsense --progress=1"
+      if Redcar.platform == :windows
+        "java -cp \".;#{RSense.path}/lib/rsense.jar;#{RSense.path}/lib/antlr-runtime-3.2.jar;#{RSense.path}/lib/jruby.jar\" org.cx4a.rsense.Main script \"--home=#{RSense.path}\" --no-prompt --end-mark=END \"--config=#{Redcar.root}/plugins/rsense/.rsense --progress=1\""
+      else
+        "java -cp '.:#{RSense.path}/lib/rsense.jar:#{RSense.path}/lib/antlr-runtime-3.2.jar:#{RSense.path}/lib/jruby.jar' org.cx4a.rsense.Main script '--home=#{RSense.path}' --no-prompt --end-mark=END --config=#{Redcar.root}/plugins/rsense/.rsense --progress=1"
+      end
     end
    
     def self.rsense_io
