@@ -5,7 +5,6 @@
 
     cd ~/.redcar/plugins
     git clone git://github.com/Samsinite/rsense.git
-    requires rsence: http://cx4a.org/software/rsense/manual.html#Installation
 
 ## USAGE
 
