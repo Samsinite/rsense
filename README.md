@@ -5,10 +5,10 @@
     Requires Java Runtime Environment 1.5 or later. SunJDK and OpenJDK are supported
 
     Installation on HEAD
-        cd into redcar/plugins
+        cd into ~/.redcar/plugins
         git clone git://github.com/Samsinite/rsense.git
     Installation on gem version
-       cd into redcar/plugins
+       cd into ~/.redcar/plugins
        git clone git://github.com/Samsinite/rsense.git
        cd rsense
        git checkout --track -b lmod origin/redcar_3.5
