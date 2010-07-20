@@ -4,10 +4,10 @@ require 'stringio'
 module Redcar
   class RSense
     
-    def self.menus
-      unless File.exist?("#{Redcar.root}/plugins/rsense/.rsense")
+    def self.menus      
+      unless File.exist?("#{File.dirname(__FILE__)}/../.rsense")
         puts "no .rsense file detected, creating .rsense file"
-        `ruby #{RSense.path}/etc/config.rb > #{Redcar.root}/plugins/rsense/.rsense`        
+        `ruby #{RSense.path}/etc/config.rb > #{File.dirname(__FILE__)}/../.rsense`        
       end
       Menu::Builder.build do
         sub_menu "Plugins" do
@@ -26,14 +26,14 @@ module Redcar
     end    
     
     def self.path
-      "#{Redcar.root}/plugins/rsense/vendor/rsense-0.3"
+      "#{File.dirname(__FILE__)}/../vendor/rsense-0.3"
     end
     
     def self.primitive_command
       if Redcar.platform == :windows
-        "java -cp \".;#{RSense.path}/lib/rsense.jar;#{RSense.path}/lib/antlr-runtime-3.2.jar;#{RSense.path}/lib/jruby.jar\" org.cx4a.rsense.Main script \"--home=#{RSense.path}\" --no-prompt --end-mark=END \"--config=#{Redcar.root}/plugins/rsense/.rsense --progress=1\""
+        "java -cp \".;#{RSense.path}/lib/rsense.jar;#{RSense.path}/lib/antlr-runtime-3.2.jar;#{RSense.path}/lib/jruby.jar\" org.cx4a.rsense.Main script \"--home=#{RSense.path}\" --no-prompt --end-mark=END \"--config=#{File.dirname(__FILE__)}/../.rsense --progress=1\""
       else
-        "java -cp '.:#{RSense.path}/lib/rsense.jar:#{RSense.path}/lib/antlr-runtime-3.2.jar:#{RSense.path}/lib/jruby.jar' org.cx4a.rsense.Main script '--home=#{RSense.path}' --no-prompt --end-mark=END --config=#{Redcar.root}/plugins/rsense/.rsense --progress=1"
+        "java -cp '.:#{RSense.path}/lib/rsense.jar:#{RSense.path}/lib/antlr-runtime-3.2.jar:#{RSense.path}/lib/jruby.jar' org.cx4a.rsense.Main script '--home=#{RSense.path}' --no-prompt --end-mark=END --config=#{File.dirname(__FILE__)}/../.rsense --progress=1"
       end
     end
    
