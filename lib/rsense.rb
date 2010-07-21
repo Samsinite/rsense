@@ -259,7 +259,7 @@ module Redcar
           end
           
           Redcar::Application::Dialog.popup_menu(builder.menu, :cursor)
-#          FileUtils.rm(path)
+          FileUtils.rm(path)
         end
       end
       
