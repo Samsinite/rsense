@@ -254,6 +254,7 @@ module Redcar
             completions.each do |completion|
               item(completion[:word] + "\t" + completion[:kind]) do              
                 cur_doc.replace(cur_doc.cursor_offset - prefix.length, prefix.length, completion[:word])
+                cur_doc.cursor_offset = cur_doc.cursor_offset + scompletion[:word].length
               end
             end
           end
