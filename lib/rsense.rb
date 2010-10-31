@@ -14,8 +14,10 @@ module Redcar
           sub_menu "RSense" do
             item "code completion", RSense::CodeCompleteCommand
             item "type inference", RSense::TypeInferenceCommand
+            item "find definition", RSense::FindDefinitionCommand
             item "code completion key binding", RSense::ChangeCompletionKeyComboCommand
             item "type inference key binding", RSense::ChangeInferenceKeyComboCommand
+            item "find definition key binding", RSense::ChangeFindDefinitionKeyComboCommand
           end
         end
       end
@@ -94,6 +96,24 @@ module Redcar
       item.first.set_accelerator(Redcar::ApplicationSWT::Menu::BindingTranslator.key(key_string))
       Redcar::ApplicationSWT::Menu.items[key_string] = item
     end
+
+    def self.find_definition_key_combo      
+      RSense.storage["find_definition_key_combo"] || "Ctrl+Shift+G"              
+    end
+    
+    def self.find_definition_key_combo=(key)
+      old_key = key_combo
+      old_key_string = Redcar::ApplicationSWT::Menu::BindingTranslator.platform_key_string(old_key)
+      item = Redcar::ApplicationSWT::Menu.items[old_key_string]
+      Redcar::ApplicationSWT::Menu.items.delete(old_key_string)
+      Redcar.app.main_keymap.map.delete(old_key)
+      RSense.storage["find_definition_key_combo"] = key
+      Redcar.app.main_keymap.map[key] = RSense::FindDefinitionCommand
+      key_string = Redcar::ApplicationSWT::Menu::BindingTranslator.platform_key_string(key)
+      item.first.text = item.first.text.split("\t").first + "\t" + key_string
+      item.first.set_accelerator(Redcar::ApplicationSWT::Menu::BindingTranslator.key(key_string))
+      Redcar::ApplicationSWT::Menu.items[key_string] = item
+    end
     
     def self.run_command(command)
       RSense.log("command: #{command}")      
@@ -109,11 +129,13 @@ module Redcar
       linwin = Keymap.build("main", [:linux, :windows]) do
         link Redcar::RSense.completion_key_combo, RSense::CodeCompleteCommand
         link Redcar::RSense.inference_key_combo, RSense::TypeInferenceCommand
+        link Redcar::RSense.find_definition_key_combo, RSense::FindDefinitionCommand
       end
 
       osx = Keymap.build("main", :osx) do
         link Redcar::RSense.completion_key_combo, RSense::CodeCompleteCommand
         link Redcar::RSense.inference_key_combo, RSense::TypeInferenceCommand
+        link Redcar::RSense.find_definition_key_combo, RSense::FindDefinitionCommand
       end
 
       [linwin, osx]
@@ -146,6 +168,19 @@ module Redcar
           end
       	end
         Redcar::RSense.inference_key_combo = result[:value] if result[:button ] == :ok
+      end
+    end
+
+    class ChangeFindDefinitionKeyComboCommand < Command
+      def execute
+        result = Application::Dialog.input("Find Definition Key Combination", "Please enter new key combo (i.e. 'Ctrl+Shift+C')", Redcar::RSense.inference_key_combo) do |text|
+          unless text == ""
+            nil
+          else
+            "invalid combination"
+          end
+      	end
+        Redcar::RSense.find_definition_key_combo = result[:value] if result[:button ] == :ok
       end
     end
     
@@ -297,5 +332,62 @@ module Redcar
         completions
       end
     end
+    
+    class FindDefinitionCommand < EditTabCommand      
+      
+      def execute
+        return unless doc.mirror
+        path = doc.mirror.path.split(/\/|\\/)
+        if (path.last.split(".").last =~ /rb|erb/) || path.last.split(".").length == 1
+          path[path.length-1]= path.last + "~"
+          path = path.join("/")
+
+          File.open(path, "wb") {|f| f.print doc.to_s }
+          
+          begin
+            result = get_location_of_definition(path)
+            
+            if result.nil?
+              tool_tip = Redcar::Application::Dialog.tool_tip("Could not find method definition.", :cursor)
+            else
+              # open file            
+              Redcar::Project::Manager.open_file(result[0])
+              # goto line correct line
+              edit_view = Redcar::Project::Manager.find_open_file_tab(result[0]).edit_view
+              edit_view.document.cursor_offset = edit_view.document.offset_at_line(result[1]-1)
+              DocumentSearch::FindNextRegex.new(/\s*def\s*([^\s]+)/, true).run_in_focussed_tab_edit_view
+            end
+          ensure
+            FileUtils.rm(path)
+          end
+        end
+      end
+      
+      def get_location_of_definition(temp_path)
+        line_offset = doc.cursor_line
+        offset_at_line = doc.cursor_line_offset
+        project = Redcar::Project.window_projects[Redcar.app.focussed_window].path + "/" if Redcar::Project.window_projects[Redcar.app.focussed_window]
+        if project
+          command = "find-definition '--file=#{temp_path}' '--location=#{line_offset+1}:#{offset_at_line}' '--detect-project=#{project}'"
+        else
+          command = "find-definition '--file=#{temp_path}' '--location=#{line_offset+1}:#{offset_at_line}'"
+        end
+        
+        result = RSense.run_command(command)
+        result = result.split("\n")
+        
+        if result[0] == "END" or not result[0] =~ /^location: (\d+) (.*)~$/
+          nil
+        else
+          match_result = result[0].match(/^location: (\d+) (.*)~$/)
+          if match_result.nil?
+            nil
+          else
+            [match_result[2], match_result[1].to_i]
+          end
+        end
+      end
+    end
+    
   end
 end
