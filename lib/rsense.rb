@@ -7,7 +7,7 @@ module Redcar
     def self.menus      
       unless File.exist?("#{File.dirname(__FILE__)}/../.rsense")
         puts "no .rsense file detected, creating .rsense file"
-        `ruby #{RSense.path}/etc/config.rb > #{File.dirname(__FILE__)}/../.rsense`        
+        `ruby "#{RSense.path}/etc/config.rb" > "#{File.dirname(__FILE__)}/../.rsense"`        
       end
       Menu::Builder.build do
         sub_menu "Plugins" do
